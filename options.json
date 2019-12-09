@@ -1,0 +1,20 @@
+{
+    "printDebug": false,
+    "dispatcherPort": 8080,
+    "secure": 
+    {
+        "certPath": "./ssl/enotes_site.crt",
+        "keyPath": "./ssl/enotes_site.key"
+    },
+    "routes":
+    [
+        {
+            "host": "localhost:8080",
+            "port": 8001
+        },
+        {
+            "host": "127.0.0.1:8080",
+            "port": 8002
+        }
+    ]
+}

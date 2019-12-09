@@ -1,23 +1,66 @@
-var bouncy = require('bouncy')
+var bouncy = require('bouncy'),
+    crypto = require('crypto'),
+    fs = require('fs')
 
-const PORT = 8080;
+const options = require(__dirname + '/options.json')
 
-var server = bouncy(function(req, res, bounce)
+var bounceOptions = {}
+
+if (options.secure)
 {
-    console.log(req.headers);
-    if (req.headers.host === '127.0.0.1:' + PORT)
+    try
     {
-        console.log("1!!!")
-        bounce(8001)
+        bounceOptions.cert = fs.readFileSync(parsePath(options.secure.certPath));
     }
-    else
+    catch (err)
     {
-        console.log("2!!!")
-        bounce(8002)
+        console.error("Failed to read certificate")
+        console.error(err)
     }
+
+    try
+    {
+        bounceOptions.key = fs.readFileSync(parsePath(options.secure.keyPath));
+    }
+    catch
+    {
+        console.error("Failed to read key")
+    }
+}
+
+var server = bouncy(bounceOptions, function(req, res, bounce)
+{
+    for (route of options.routes)
+    {
+        if (route.host === req.headers.host)
+        {
+            if (options.printDebug) console.log("Routing '" + route.host + "' to port " + route.port);
+            bounce(route.port);
+            return;
+        }
+    }
+
+    if (options.printDebug) console.log("Host redirect not found for " + req.headers.host);
 });
 
-server.listen(PORT, () =>
+server.listen(options.dispatcherPort, () =>
 {
-    console.log("Dispatcher listening on port: ", PORT);
+    console.log("Dispatcher listening on port: ", options.dispatcherPort);
 });
+
+function parsePath(input)
+{
+    if (input.charAt(0) === '.')
+    {
+        return __dirname + input.substr(1);
+    }
+    return input;
+}
+
+function sni_select(hostname) {
+    var creds = {
+        key: fs.readFileSync('./ssl/enotes_site.key'),
+        cert: fs.readFileSync('./ssl/enotes_site.crt')
+    };
+    return crypto.createCredentials(creds).context
+}
